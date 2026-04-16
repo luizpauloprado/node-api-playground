@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { healthRouter } from "../modules/health/health.routes";
+import { productsRouter } from "../modules/products/product.routes";
 
 // 📌 Router central — ponto único de registro de todas as rotas
 // Cada módulo registra suas próprias rotas aqui com seu prefixo
@@ -7,7 +8,4 @@ import { healthRouter } from "../modules/health/health.routes";
 export const router = Router();
 
 router.use("/health", healthRouter);
-
-// Módulos futuros virão aqui:
-// router.use("/users", usersRouter);
-// router.use("/products", productsRouter);
+router.use("/products", productsRouter);
