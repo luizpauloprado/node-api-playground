@@ -16,12 +16,18 @@ src/
 │
 ├── modules/                        # Cada domínio é auto-contido aqui dentro
 │   ├── health/
-│   │   └── health.routes.ts        # GET /api/health — liveness check para load balancers
+│   │   ├── health.routes.ts        # GET /api/health — liveness check para load balancers
+│   │   └── tests/
+│   │       └── health.routes.test.ts   # Integração: verifica contrato HTTP do endpoint
 │   └── products/
 │       ├── product.schema.ts       # Tipos e schemas Zod (CreateProductInput, Product, etc.)
 │       ├── product.repository.ts   # Acesso a dados — única camada que toca o banco (in-memory por agora)
 │       ├── product.service.ts      # Regras de negócio — não sabe que existe HTTP
-│       └── product.routes.ts       # Handlers HTTP — valida input, chama service, responde
+│       ├── product.routes.ts       # Handlers HTTP — valida input, chama service, responde
+│       └── tests/
+│           ├── product.schema.test.ts  # Unitário: validações Zod (campos, limites, formatos)
+│           ├── product.service.test.ts # Unitário: regras de negócio com repository mockado
+│           └── product.routes.test.ts  # Integração: ciclo HTTP completo com app real
 │
 ├── routes/
 │   └── index.ts                    # Registry central — registra todos os módulos com seus prefixos
@@ -60,6 +66,28 @@ npm run build && npm start
 | `POST` | `/api/products` | Cria novo produto |
 | `PATCH` | `/api/products/:id` | Atualiza produto parcialmente |
 | `DELETE` | `/api/products/:id` | Remove produto |
+
+---
+
+## Testes
+
+Cada módulo tem uma pasta `tests/` ao lado dos seus arquivos de produção. A proximidade é intencional: o teste vive junto do código que ele verifica, facilitando encontrar e manter ambos.
+
+```bash
+npm test              # Roda todos os testes uma vez
+npm run test:watch    # Modo watch — re-executa ao salvar
+npm run test:coverage # Gera relatório de cobertura
+```
+
+### Tipos de teste usados
+
+**Unitários** — testam uma única camada em isolamento, sem HTTP e sem banco. O repository é substituído por um mock controlado pelo teste, então o resultado depende apenas da lógica do service ou das regras do schema. Rápidos e determinísticos.
+
+**Integração** — testam o ciclo completo: a requisição HTTP entra, passa pelo middleware de validação, chega ao service, acessa o repository (in-memory) e retorna uma resposta real. Nenhum mock — o objetivo é verificar que todas as camadas funcionam juntas da forma que um cliente da API veria.
+
+### Por que essa separação?
+
+Um teste unitário do service garante que a regra de negócio está correta independentemente do HTTP. Um teste de integração das routes garante que o Express está roteando, validando e respondendo corretamente. Se um bug aparecer, a camada que falha aponta diretamente onde o problema está.
 
 ---
 
