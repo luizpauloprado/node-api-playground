@@ -15,9 +15,3 @@ export const productParamsSchema = z.object({
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
-
-export type Product = CreateProductInput & {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-};

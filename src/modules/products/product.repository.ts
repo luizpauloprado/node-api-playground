@@ -1,40 +1,47 @@
-import { randomUUID } from "crypto";
-import type { CreateProductInput, UpdateProductInput, Product } from "./product.schema";
+import { eq } from "drizzle-orm";
+import { db } from "@/config/db";
+import { products } from "@/db/schema/products";
+import type { CreateProductInput, UpdateProductInput } from "./product.schema";
+import type { ProductRow } from "@/db/schema/products";
 
-// Simula um banco de dados em memória — será substituído pelo Drizzle no Módulo 3
-const products = new Map<string, Product>();
+export type { ProductRow as Product };
 
 export const productRepository = {
-  findAll(): Product[] {
-    return Array.from(products.values());
+  async findAll(): Promise<ProductRow[]> {
+    return db.select().from(products);
   },
 
-  findById(id: string): Product | undefined {
-    return products.get(id);
+  async findById(id: string): Promise<ProductRow | undefined> {
+    const rows = await db.select().from(products).where(eq(products.id, id));
+    return rows[0];
   },
 
-  create(input: CreateProductInput): Product {
-    const now = new Date();
-    const product: Product = {
-      ...input,
-      id: randomUUID(),
-      createdAt: now,
-      updatedAt: now,
-    };
-    products.set(product.id, product);
-    return product;
+  async create(input: CreateProductInput): Promise<ProductRow> {
+    const rows = await db
+      .insert(products)
+      .values({ ...input, price: String(input.price) })
+      .returning();
+    return rows[0];
   },
 
-  update(id: string, input: UpdateProductInput): Product | undefined {
-    const existing = products.get(id);
-    if (!existing) return undefined;
+  async update(id: string, input: UpdateProductInput): Promise<ProductRow | undefined> {
+    const values: Partial<typeof products.$inferInsert> = {};
+    if (input.name !== undefined) values.name = input.name;
+    if (input.description !== undefined) values.description = input.description;
+    if (input.price !== undefined) values.price = String(input.price);
+    if (input.stock !== undefined) values.stock = input.stock;
+    values.updatedAt = new Date();
 
-    const updated: Product = { ...existing, ...input, updatedAt: new Date() };
-    products.set(id, updated);
-    return updated;
+    const rows = await db
+      .update(products)
+      .set(values)
+      .where(eq(products.id, id))
+      .returning();
+    return rows[0];
   },
 
-  delete(id: string): boolean {
-    return products.delete(id);
+  async delete(id: string): Promise<boolean> {
+    const rows = await db.delete(products).where(eq(products.id, id)).returning();
+    return rows.length > 0;
   },
 };

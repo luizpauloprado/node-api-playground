@@ -3,29 +3,27 @@ import { productRepository } from "./product.repository";
 import type { CreateProductInput, UpdateProductInput } from "./product.schema";
 
 export const productService = {
-  list() {
+  async list() {
     return productRepository.findAll();
   },
 
-  getById(id: string) {
-    const product = productRepository.findById(id);
+  async getById(id: string) {
+    const product = await productRepository.findById(id);
     if (!product) throw new AppError("Product not found", 404, "PRODUCT_NOT_FOUND");
     return product;
   },
 
-  create(input: CreateProductInput) {
+  async create(input: CreateProductInput) {
     return productRepository.create(input);
   },
 
-  update(id: string, input: UpdateProductInput) {
-    // Garante que o produto existe antes de tentar atualizar
-    this.getById(id);
-    return productRepository.update(id, input)!;
+  async update(id: string, input: UpdateProductInput) {
+    await this.getById(id);
+    return productRepository.update(id, input) as Promise<NonNullable<Awaited<ReturnType<typeof productRepository.update>>>>;
   },
 
-  delete(id: string) {
-    // Garante que o produto existe antes de tentar deletar
-    this.getById(id);
-    productRepository.delete(id);
+  async delete(id: string) {
+    await this.getById(id);
+    await productRepository.delete(id);
   },
 };

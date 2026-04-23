@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import { createApp } from "@/app";
+import { db } from "@/config/db";
+import { products } from "@/db/schema/products";
 
-// Testes de integração: usam o app real com o repository in-memory.
-// Nenhum mock aqui — testamos o ciclo completo HTTP → service → repository → resposta.
+// Testes de integração: usam o app real com PostgreSQL real (Testcontainers).
+// Nenhum mock — testamos o ciclo completo HTTP → service → repository → banco → resposta.
 
 const app = createApp();
 
@@ -14,12 +16,20 @@ const validProduct = {
   stock: 3,
 };
 
+// Limpa a tabela antes de cada teste para garantir isolamento
+beforeEach(async () => {
+  await db.delete(products);
+});
+
 describe("POST /api/products", () => {
   it("cria um produto e retorna 201 com o objeto criado", async () => {
     const res = await request(app).post("/api/products").send(validProduct);
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject(validProduct);
+    expect(res.body.name).toBe(validProduct.name);
+    expect(res.body.description).toBe(validProduct.description);
+    expect(Number(res.body.price)).toBe(validProduct.price); // numeric vira string no PostgreSQL
+    expect(res.body.stock).toBe(validProduct.stock);
     expect(res.body.id).toBeDefined();
     expect(res.body.createdAt).toBeDefined();
   });
@@ -81,7 +91,7 @@ describe("PATCH /api/products/:id", () => {
       .send({ price: 999 });
 
     expect(res.status).toBe(200);
-    expect(res.body.price).toBe(999);
+    expect(Number(res.body.price)).toBe(999);
     expect(res.body.name).toBe(validProduct.name);
   });
 

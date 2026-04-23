@@ -9,25 +9,29 @@ import {
 export const productsRouter = Router();
 
 // GET /products
-productsRouter.get("/", (_req: Request, res: Response) => {
-  res.json(productService.list());
+productsRouter.get("/", async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(await productService.list());
+  } catch (err) {
+    next(err);
+  }
 });
 
 // GET /products/:id
-productsRouter.get("/:id", (req: Request, res: Response, next: NextFunction) => {
+productsRouter.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = productParamsSchema.parse(req.params);
-    res.json(productService.getById(id));
+    res.json(await productService.getById(id));
   } catch (err) {
     next(err);
   }
 });
 
 // POST /products
-productsRouter.post("/", (req: Request, res: Response, next: NextFunction) => {
+productsRouter.post("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const input = createProductSchema.parse(req.body);
-    const product = productService.create(input);
+    const product = await productService.create(input);
     res.status(201).json(product);
   } catch (err) {
     next(err);
@@ -35,21 +39,21 @@ productsRouter.post("/", (req: Request, res: Response, next: NextFunction) => {
 });
 
 // PATCH /products/:id
-productsRouter.patch("/:id", (req: Request, res: Response, next: NextFunction) => {
+productsRouter.patch("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = productParamsSchema.parse(req.params);
     const input = updateProductSchema.parse(req.body);
-    res.json(productService.update(id, input));
+    res.json(await productService.update(id, input));
   } catch (err) {
     next(err);
   }
 });
 
 // DELETE /products/:id
-productsRouter.delete("/:id", (req: Request, res: Response, next: NextFunction) => {
+productsRouter.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = productParamsSchema.parse(req.params);
-    productService.delete(id);
+    await productService.delete(id);
     res.status(204).send();
   } catch (err) {
     next(err);
